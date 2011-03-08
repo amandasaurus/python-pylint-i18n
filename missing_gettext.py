@@ -63,6 +63,7 @@ class MissingGettextChecker(BaseChecker):
 
             # URL, can't be translated
             lambda x: x.startswith("http://") or x.endswith(".html"),
+            lambda x: x.startswith("https://") or x.endswith(".html"),
             
             # probably a regular expression
             lambda x: x.startswith("^") and x.endswith("$"),
@@ -72,7 +73,12 @@ class MissingGettextChecker(BaseChecker):
 
             # Only has format specifiers and non-letters, so ignore it
             lambda x :not any([z in x.replace("%s", "").replace("%d", "") for z in string.letters]),
+
+            # sending http attachment header
             lambda x: x.startswith("attachment; filename="),
+
+            # sending http header
+            lambda x: x.startswith("text/html; charset="),
         ]
 
         for func in whitelisted_strings:
@@ -104,11 +110,11 @@ class MissingGettextChecker(BaseChecker):
             (Discard, lambda curr_node, node: curr_node.value == node),
 
             # X(attrs={'class': 'somecssclass', 'maxlength': '20'})
-            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and hasattr(curr_node.value, 'items') and node in [x[1] for x in curr_node.value.items if x[0].value in ['class', 'maxlength', 'cols', 'rows', 'checked', 'disabled']]),
+            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and hasattr(curr_node.value, 'items') and node in [x[1] for x in curr_node.value.items if x[0].value in ['class', 'maxlength', 'cols', 'rows', 'checked', 'disabled', 'readonly']]),
             # X(attrs=dict(....))
             (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and isinstance(curr_node.value, CallFunc) and hasattr(curr_node.value.func, 'name') and curr_node.value.func.name == 'dict' ),
             # x = CharField(default='xxx', related_name='tickets') etc.
-            (Keyword, lambda curr_node, node: curr_node.arg in ['regex', 'prefix', 'css_class', 'mimetype', 'related_name', 'default', 'initial'] and curr_node.value == node),
+            (Keyword, lambda curr_node, node: curr_node.arg in ['regex', 'prefix', 'css_class', 'mimetype', 'related_name', 'default', 'initial', 'upload_to'] and curr_node.value == node),
             (Keyword, lambda curr_node, node: curr_node.arg in ['input_formats'] and len(curr_node.value.elts) == 1 and curr_node.value.elts[0] == node),
             (Keyword, lambda curr_node, node: curr_node.arg in ['fields'] and node in curr_node.value.elts),
             # something() == 'string'
@@ -128,10 +134,10 @@ class MissingGettextChecker(BaseChecker):
             # hasattr(..., 'should ignore')
             # HttpResponseRedirect('/some/url/shouldnt/care')
             # first is function name, 2nd is the position the string must be in (none to mean don't care)
-            (CallFunc, lambda curr_node, node: curr_node.func.name == 'hasattr' and curr_node.args[1] == node),
+            (CallFunc, lambda curr_node, node: curr_node.func.name in ['hasattr', 'getattr'] and curr_node.args[1] == node),
             (CallFunc, lambda curr_node, node: curr_node.func.name in ['HttpResponseRedirect', 'HttpResponse']),
             (CallFunc, lambda curr_node, node: curr_node.func.name == 'set_cookie' and curr_node.args[0] == node),
-            (CallFunc, lambda curr_node, node: curr_node.func.name == 'ForeignKey' and curr_node.args[0] == node),
+            (CallFunc, lambda curr_node, node: curr_node.func.name in ['ForeignKey', 'OneToOneField'] and curr_node.args[0] == node),
         ]
 
         string_ok = False
