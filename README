@@ -1,0 +1,3 @@
+This is a pylint checker to check for strings in python source code that has not been passed through ugettext/_.
+
+For more information see the homepage: http://www.technomancy.org/python/pylint-i18n-lint-checker/
