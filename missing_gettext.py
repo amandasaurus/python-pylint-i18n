@@ -1,7 +1,12 @@
 from logilab import astng
 from logilab.astng.node_classes import *
 
-from pylint.interfaces import IASTNGChecker
+try:
+    from pylint.interfaces import IAstroidChecker
+except:
+    # fallback to older pylint naming
+    from pylint.interfaces import IASTNGChecker as IAstroidChecker
+
 from pylint.checkers import BaseChecker
 
 import string
@@ -29,7 +34,7 @@ class MissingGettextChecker(BaseChecker):
     Checks for strings that aren't wrapped in a _ call somewhere
     """
     
-    __implements__ = IASTNGChecker
+    __implements__ = IAstroidChecker
 
     name = 'missing_gettext'
     msgs = {
