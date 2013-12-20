@@ -1,5 +1,9 @@
-from logilab import astng
-from logilab.astng.node_classes import *
+try:
+    from logilab import astng
+    from logilab.astng.node_classes import *
+except ImportError:
+    import astroid
+    from astroid.node_classes import *
 
 try:
     from pylint.interfaces import IAstroidChecker
