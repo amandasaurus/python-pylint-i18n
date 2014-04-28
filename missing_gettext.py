@@ -1,5 +1,9 @@
-from logilab import astng
-from logilab.astng.node_classes import *
+try:
+    from logilab import astng
+    from logilab.astng.node_classes import *
+except ImportError:
+    import astroid
+    from astroid.node_classes import *
 
 try:
     from pylint.interfaces import IAstroidChecker
@@ -29,6 +33,20 @@ def is_child_node(child, parent):
     return False
 
 
+def _is_str(s):
+    """
+    Is this a string or a unicode string?
+    """
+    if isinstance(s, str):
+        return True
+    try:
+        if isinstance(s, unicode):
+            return True
+    except NameError: # unicode not defined in Python 3
+        pass
+    return False
+
+
 class MissingGettextChecker(BaseChecker):
     """
     Checks for strings that aren't wrapped in a _ call somewhere
@@ -47,7 +65,7 @@ class MissingGettextChecker(BaseChecker):
 
 
     def visit_const(self, node):
-        if not (isinstance(node.value, str) or isinstance(node.value, unicode)):
+        if not _is_str(node.value):
             return
 
         # Ignore some strings based on the contents.
@@ -77,7 +95,7 @@ class MissingGettextChecker(BaseChecker):
             lambda x: x.startswith("/") and x.endswith("/"),
 
             # Only has format specifiers and non-letters, so ignore it
-            lambda x :not any([z in x.replace("%s", "").replace("%d", "") for z in string.letters]),
+            lambda x :not any([z in x.replace("%s", "").replace("%d", "") for z in string.ascii_letters]),
 
             # sending http attachment header
             lambda x: x.startswith("attachment; filename="),
@@ -157,7 +175,7 @@ class MissingGettextChecker(BaseChecker):
         try:
             while curr_node.parent is not None:
                 if debug:
-                    print repr(curr_node); print repr(curr_node.as_string()) ; print curr_node.repr_tree()
+                    print(repr(curr_node)); print(repr(curr_node.as_string())) ; print(curr_node.repr_tree())
                 if isinstance(curr_node, CallFunc):
                     if hasattr(curr_node, 'func') and hasattr(curr_node.func, 'name'):
                         if curr_node.func.name in ['_', 'ungettext', 'ungettext_lazy']:
@@ -180,10 +198,10 @@ class MissingGettextChecker(BaseChecker):
 
                 curr_node = curr_node.parent
 
-        except Exception, e:
-            print node, node.as_string()
-            print curr_node, curr_node.as_string()
-            print e
+        except Exception as e:
+            print(node, node.as_string())
+            print(curr_node, curr_node.as_string())
+            print(e)
             import pdb ; pdb.set_trace()
         
         if not string_ok:
