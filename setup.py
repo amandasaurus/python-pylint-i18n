@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name="pylint-i18n",
-      version="0.1.3",
+      version="1.0.0",
       description="Find strings in your code that should be passed through gettext",
       author="Rory McCann",
       author_email="rory@technomancy.org",
@@ -18,6 +18,7 @@ setup(name="pylint-i18n",
         'Topic :: Software Development :: Internationalization',
         'Topic :: Software Development :: Localization',
         'Topic :: Software Development :: Quality Assurance',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       ],
       install_requires=['pylint'],
 )
