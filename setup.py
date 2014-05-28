@@ -9,6 +9,7 @@ setup(name="pylint-i18n",
       author_email="rory@technomancy.org",
       url="http://www.technomancy.org/python/pylint-i18n-lint-checker/",
       py_modules=["missing_gettext"],
+      test_suite='tests',
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python :: 2.5',
