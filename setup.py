@@ -21,5 +21,5 @@ setup(name="pylint-i18n",
         'Topic :: Software Development :: Quality Assurance',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
       ],
-      install_requires=['pylint'],
+      install_requires=['pylint>=1'],
 )
