@@ -15,6 +15,7 @@ from pylint.checkers import BaseChecker
 
 import string
 
+
 def is_number(string):
     """Returns True if this string is a string representation of a number"""
     try:
@@ -22,6 +23,7 @@ def is_number(string):
         return True
     except ValueError:
         return False
+
 
 def is_child_node(child, parent):
     """Returns True if child is an eventual child node of parent"""
@@ -42,27 +44,27 @@ def _is_str(s):
     try:
         if isinstance(s, unicode):
             return True
-    except NameError: # unicode not defined in Python 3
+    except NameError:  # unicode not defined in Python 3
         pass
     return False
 
 
 class MissingGettextChecker(BaseChecker):
+
     """
     Checks for strings that aren't wrapped in a _ call somewhere
     """
-    
+
     __implements__ = IAstroidChecker
 
     name = 'missing_gettext'
     msgs = {
         'W9903': ('non-gettext-ed string %r',
                   "There is a raw string that's not passed through gettext"),
-        }
+    }
 
     # this is important so that your checker is executed before others
-    priority = -1 
-
+    priority = -1
 
     def visit_const(self, node):
         if not _is_str(node.value):
@@ -73,9 +75,9 @@ class MissingGettextChecker(BaseChecker):
         # return true for this string, then this string is ignored
         whitelisted_strings = [
             # ignore empty strings
-            lambda x : x == '',
+            lambda x: x == '',
 
-            # some strings we use 
+            # some strings we use
             lambda x: x in ['POST', 'agency', 'promoter', 'venue', 'utf-8'],
 
             # This string is probably used as a key or something, and should be ignored
@@ -87,7 +89,7 @@ class MissingGettextChecker(BaseChecker):
             # URL, can't be translated
             lambda x: x.startswith("http://") or x.endswith(".html"),
             lambda x: x.startswith("https://") or x.endswith(".html"),
-            
+
             # probably a regular expression
             lambda x: x.startswith("^") and x.endswith("$"),
 
@@ -95,7 +97,7 @@ class MissingGettextChecker(BaseChecker):
             lambda x: x.startswith("/") and x.endswith("/"),
 
             # Only has format specifiers and non-letters, so ignore it
-            lambda x :not any([z in x.replace("%s", "").replace("%d", "") for z in string.ascii_letters]),
+            lambda x:not any([z in x.replace("%s", "").replace("%d", "") for z in string.ascii_letters]),
 
             # sending http attachment header
             lambda x: x.startswith("attachment; filename="),
@@ -107,7 +109,6 @@ class MissingGettextChecker(BaseChecker):
         for func in whitelisted_strings:
             if func(node.value):
                 return
-        
 
         # Whitelist some strings based on the structure.
         # Each element of this list is a 2-tuple, class and then a 2 arg function.
@@ -120,22 +121,24 @@ class MissingGettextChecker(BaseChecker):
         # functions then the string is assumed to be OK
         whitelist = [
             # {'shouldignore': 1}
-            (Dict,    lambda curr_node, node: node in [x[0] for x in curr_node.items]),
+            (Dict, lambda curr_node, node: node in [x[0] for x in curr_node.items]),
 
             # dict['shouldignore']
-            (Index,   lambda curr_node, node: curr_node.value == node),
+            (Index, lambda curr_node, node: curr_node.value == node),
 
             # list_display = [....]
             # e.g. Django Admin class Meta:...
-            (Assign,  lambda curr_node, node: len(curr_node.targets) == 1 and hasattr(curr_node.targets[0], 'name') and curr_node.targets[0].name in ['list_display', 'js', 'css', 'fields', 'exclude', 'list_filter', 'list_display_links', 'ordering', 'search_fields', 'actions', 'unique_together', 'db_table', 'custom_filters', 'search_fields', 'custom_date_list_filters', 'export_fields', 'date_hierarchy' ]),
+            (Assign, lambda curr_node, node: len(curr_node.targets) == 1 and hasattr(curr_node.targets[0], 'name') and curr_node.targets[0].name in [
+             'list_display', 'js', 'css', 'fields', 'exclude', 'list_filter', 'list_display_links', 'ordering', 'search_fields', 'actions', 'unique_together', 'db_table', 'custom_filters', 'search_fields', 'custom_date_list_filters', 'export_fields', 'date_hierarchy']),
 
             # Just a random doc-string-esque string in the code
             (Discard, lambda curr_node, node: curr_node.value == node),
 
             # X(attrs={'class': 'somecssclass', 'maxlength': '20'})
-            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and hasattr(curr_node.value, 'items') and node in [x[1] for x in curr_node.value.items if x[0].value in ['class', 'maxlength', 'cols', 'rows', 'checked', 'disabled', 'readonly']]),
+            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and hasattr(curr_node.value, 'items') and node in [
+             x[1] for x in curr_node.value.items if x[0].value in ['class', 'maxlength', 'cols', 'rows', 'checked', 'disabled', 'readonly']]),
             # X(attrs=dict(....))
-            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and isinstance(curr_node.value, CallFunc) and hasattr(curr_node.value.func, 'name') and curr_node.value.func.name == 'dict' ),
+            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and isinstance(curr_node.value, CallFunc) and hasattr(curr_node.value.func, 'name') and curr_node.value.func.name == 'dict'),
             # x = CharField(default='xxx', related_name='tickets') etc.
             (Keyword, lambda curr_node, node: curr_node.arg in ['regex', 'prefix', 'css_class', 'mimetype', 'related_name', 'default', 'initial', 'upload_to'] and curr_node.value == node),
             (Keyword, lambda curr_node, node: curr_node.arg in ['input_formats'] and len(curr_node.value.elts) == 1 and curr_node.value.elts[0] == node),
@@ -149,11 +152,12 @@ class MissingGettextChecker(BaseChecker):
             (CallFunc, lambda curr_node, node: curr_node.func.attrname in ['extra'] and any(is_child_node(node, x) for x in curr_node.args)),
 
             # Queryset functions, queryset.order_by('shouldignore')
-            (CallFunc, lambda curr_node, node: isinstance(curr_node.func, Getattr) and curr_node.func.attrname in ['has_key', 'pop', 'order_by', 'strftime', 'strptime', 'get', 'select_related', 'values', 'filter', 'values_list']),
-             # logging.info('shouldignore')
+            (CallFunc, lambda curr_node, node: isinstance(curr_node.func, Getattr) and curr_node.func.attrname in [
+             'has_key', 'pop', 'order_by', 'strftime', 'strptime', 'get', 'select_related', 'values', 'filter', 'values_list']),
+            # logging.info('shouldignore')
             (CallFunc, lambda curr_node, node: curr_node.func.expr.name in ['logging']),
 
-                
+
             # hasattr(..., 'should ignore')
             # HttpResponseRedirect('/some/url/shouldnt/care')
             # first is function name, 2nd is the position the string must be in (none to mean don't care)
@@ -164,18 +168,21 @@ class MissingGettextChecker(BaseChecker):
         ]
 
         string_ok = False
-        
+
         debug = False
         #debug = True
         curr_node = node
         if debug:
-            import pdb ; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
 
         # we have a string. Go upwards to see if we have a _ function call
         try:
             while curr_node.parent is not None:
                 if debug:
-                    print(repr(curr_node)); print(repr(curr_node.as_string())) ; print(curr_node.repr_tree())
+                    print(repr(curr_node))
+                    print(repr(curr_node.as_string()))
+                    print(curr_node.repr_tree())
                 if isinstance(curr_node, CallFunc):
                     if hasattr(curr_node, 'func') and hasattr(curr_node.func, 'name'):
                         if curr_node.func.name in ['_', 'ungettext', 'ungettext_lazy']:
@@ -202,16 +209,15 @@ class MissingGettextChecker(BaseChecker):
             print(node, node.as_string())
             print(curr_node, curr_node.as_string())
             print(e)
-            import pdb ; pdb.set_trace()
-        
+            import pdb
+            pdb.set_trace()
+
         if not string_ok:
             # we've gotten to the top of the code tree / file level and we
             # haven't been whitelisted, so add an error here
             self.add_message('W9903', node=node, args=node.value)
 
-    
+
 def register(linter):
     """required method to auto register this checker"""
     linter.register_checker(MissingGettextChecker(linter))
-        
-
