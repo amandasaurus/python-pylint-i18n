@@ -21,7 +21,7 @@ except:
 from pylint.checkers import BaseChecker
 
 import string
-
+import os.path
 
 def is_number(string):
     """Returns True if this string is a string representation of a number"""
@@ -118,6 +118,50 @@ def _is_url(s):
     return result
 
 
+def _is_path(s):
+    """
+    Test if ``s`` seems to be an URL, using ``urllib.parse`` if available,
+    a fall‑back otherwise. The fall back test common protocol prefixes
+    and filname extensions.
+
+    :param str s:
+    :rtype: bool
+
+    This is not intended to be reliable for other mean than telling if
+    whether or not, the string is translatable. Don't use this function
+    for other purpose, as it may return a lot of false negative.
+
+    Examples which will return ``True``:
+
+     * ``"~/document.txt"``
+     * ``"../document.txt"``
+     * ``"something/.."``
+     * ``"parent/../child"``
+
+    Samples which will return ``False``:
+
+     * ``"parent/child"``
+     * ``"document.txt"``
+
+    """
+
+    result = False
+
+    if os.path.expanduser(s) != s:
+        # Expands ``$HOME`` on Windows, but not on UNIces. Still don't
+        # use ``os.path.expandvars``, as this expands everything,
+        # including what's not really related t paths.
+        result = True
+    elif s.find('./') != -1:
+        # Testing ``./`` includes testing ``../``.
+        result = True
+    elif s.find('/.') != -1:
+        # Same comment as above.
+        result = True
+
+    return result
+
+
 class MissingGettextChecker(BaseChecker):
 
     """
@@ -157,6 +201,9 @@ class MissingGettextChecker(BaseChecker):
 
             # URL, can't be translated
             _is_url,
+
+            # Paths, usually can't be translated
+            _is_path,
 
             # probably a regular expression
             lambda x: x.startswith("^") and x.endswith("$"),
