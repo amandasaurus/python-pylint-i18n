@@ -112,7 +112,7 @@ def _is_url(s):
                 break
 
         if not result:
-            for extension in extension:
+            for extension in extensions:
                 if strictly_ends_with(s, '.' + extension):
                     result = True
                     break
