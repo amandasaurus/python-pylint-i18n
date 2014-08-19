@@ -12,16 +12,18 @@ except:
     from pylint.interfaces import IASTNGChecker as IAstroidChecker
 
 try:
-   # ``urllib.parse`` is new (since Python 3.3), so may not be available to everyone.
-   import urllib.parse
-   _PARSE_URL = True
+    # ``urllib.parse`` is new (since Python 3.3), so may not be available to
+    # everyone.
+    import urllib.parse
+    _PARSE_URL = True
 except:
-   _PARSE_URL = False
+    _PARSE_URL = False
 
 from pylint.checkers import BaseChecker
 
 import string
 import os.path
+
 
 def is_number(string):
     """Returns True if this string is a string representation of a number"""
@@ -83,37 +85,37 @@ def _is_url(s):
     """
 
     if _PARSE_URL:
-      url = urllib.parse.urlparse(s)
-      has_scheme = url.scheme != ''
-      has_netloc = url.netloc != ''
-      has_path = url.path != ''
-      result = has_scheme and (has_netloc or has_path)
+        url = urllib.parse.urlparse(s)
+        has_scheme = url.scheme != ''
+        has_netloc = url.netloc != ''
+        has_path = url.path != ''
+        result = has_scheme and (has_netloc or has_path)
     else:
-      # Fall‑back for when ``urllib`` is not available.
+        # Fall‑back for when ``urllib`` is not available.
 
-      def strictly_starts_with(s, p):
-         """Test if ``p`` is a prefix of ``s`` and ``p != s``."""
-         return s.startswith(p) and (s != p)
+        def strictly_starts_with(s, p):
+            """Test if ``p`` is a prefix of ``s`` and ``p != s``."""
+            return s.startswith(p) and (s != p)
 
-      def strictly_ends_with(s, p):
-         """Test if ``p`` is a suffix of ``s`` and ``p != s``."""
-         return s.startswith(p) and (s != p)
+        def strictly_ends_with(s, p):
+            """Test if ``p`` is a suffix of ``s`` and ``p != s``."""
+            return s.startswith(p) and (s != p)
 
-      protocols = ['file', 'ftp', 'http', 'https', 'sftp', 'ssh']
-      extensions = ['asp', 'html', 'php', 'xhtml']
+        protocols = ['file', 'ftp', 'http', 'https', 'sftp', 'ssh']
+        extensions = ['asp', 'html', 'php', 'xhtml']
 
-      result = False
+        result = False
 
-      for protocol in protocols:
-         if strictly_starts_with(s, protocol + '://'):
-            result = True
-            break
+        for protocol in protocols:
+            if strictly_starts_with(s, protocol + '://'):
+                result = True
+                break
 
-      if not result:
-         for extension in extension:
-            if strictly_ends_with(s, '.' + extension):
-               result = True
-               break
+        if not result:
+            for extension in extension:
+                if strictly_ends_with(s, '.' + extension):
+                    result = True
+                    break
 
     return result
 
@@ -193,7 +195,8 @@ class MissingGettextChecker(BaseChecker):
             # some strings we use
             lambda x: x in ['POST', 'agency', 'promoter', 'venue', 'utf-8'],
 
-            # This string is probably used as a key or something, and should be ignored
+            # This string is probably used as a key or something, and should
+            # be ignored
             lambda x: len(x) > 3 and x.upper() == x,
 
             # pure number
@@ -212,7 +215,8 @@ class MissingGettextChecker(BaseChecker):
             lambda x: x.startswith("/") and x.endswith("/"),
 
             # Only has format specifiers and non-letters, so ignore it
-            lambda x:not any([z in x.replace("%s", "").replace("%d", "") for z in string.ascii_letters]),
+            lambda x:(not any([z in x.replace("%s", "").replace("%d", "")
+                      for z in string.ascii_letters])),
 
             # sending http attachment header
             lambda x: x.startswith("attachment; filename="),
@@ -226,66 +230,123 @@ class MissingGettextChecker(BaseChecker):
                 return
 
         # Whitelist some strings based on the structure.
-        # Each element of this list is a 2-tuple, class and then a 2 arg function.
-        # Starting with the current string, and going up the parse tree to the
-        # root (i.e. the whole file), for every whitelist element, if the
-        # current node is an instance of the first element, then the 2nd
-        # element is called with that node and the original string. If that
-        # returns True, then this string is assumed to be OK.
+        # Each element of this list is a 2-tuple, class and then a 2 arg
+        # function. Starting with the current string, and going up the parse
+        # tree to the root (i.e. the whole file), for every whitelist element,
+        # if the current node is an instance of the first element, then the
+        # 2nd element is called with that node and the original string. If
+        # that returns True, then this string is assumed to be OK.
         # If any parent node of this string returns True for any of these
         # functions then the string is assumed to be OK
         whitelist = [
             # {'shouldignore': 1}
-            (Dict, lambda curr_node, node: node in [x[0] for x in curr_node.items]),
+            (Dict,
+             lambda curr_node,
+             node: node in [x[0] for x in curr_node.items]),
 
             # dict['shouldignore']
             (Index, lambda curr_node, node: curr_node.value == node),
 
             # list_display = [....]
             # e.g. Django Admin class Meta:...
-            (Assign, lambda curr_node, node: len(curr_node.targets) == 1 and hasattr(curr_node.targets[0], 'name') and curr_node.targets[0].name in [
-             'list_display', 'js', 'css', 'fields', 'exclude', 'list_filter', 'list_display_links', 'ordering', 'search_fields', 'actions', 'unique_together', 'db_table', 'custom_filters', 'search_fields', 'custom_date_list_filters', 'export_fields', 'date_hierarchy']),
+            (Assign,
+             lambda curr_node,
+             node: (len(curr_node.targets) == 1
+                    and hasattr(curr_node.targets[0], 'name')
+                    and curr_node.targets[0].name in [
+                        'list_display', 'js', 'css', 'fields', 'exclude',
+                        'list_filter', 'list_display_links', 'ordering',
+                        'search_fields', 'actions', 'unique_together',
+                        'db_table', 'custom_filters', 'search_fields',
+                        'custom_date_list_filters', 'export_fields',
+                        'date_hierarchy'])),
 
             # Just a random doc-string-esque string in the code
             (Discard, lambda curr_node, node: curr_node.value == node),
 
             # X(attrs={'class': 'somecssclass', 'maxlength': '20'})
-            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and hasattr(curr_node.value, 'items') and node in [
-             x[1] for x in curr_node.value.items if x[0].value in ['class', 'maxlength', 'cols', 'rows', 'checked', 'disabled', 'readonly']]),
+            (Keyword,
+             lambda curr_node,
+             node: (curr_node.arg == 'attrs'
+                    and hasattr(curr_node.value, 'items')
+                    and node in [x[1] for x in curr_node.value.items
+                                 if x[0].value in [
+                                 'class', 'maxlength', 'cols', 'rows',
+                                 'checked', 'disabled', 'readonly']])),
             # X(attrs=dict(....))
-            (Keyword, lambda curr_node, node: curr_node.arg == 'attrs' and isinstance(curr_node.value, CallFunc) and hasattr(curr_node.value.func, 'name') and curr_node.value.func.name == 'dict'),
+            (Keyword,
+             lambda curr_node,
+             node: (curr_node.arg == 'attrs'
+                    and isinstance(curr_node.value, CallFunc)
+                    and hasattr(curr_node.value.func, 'name')
+                    and curr_node.value.func.name == 'dict')),
             # x = CharField(default='xxx', related_name='tickets') etc.
-            (Keyword, lambda curr_node, node: curr_node.arg in ['regex', 'prefix', 'css_class', 'mimetype', 'related_name', 'default', 'initial', 'upload_to'] and curr_node.value == node),
-            (Keyword, lambda curr_node, node: curr_node.arg in ['input_formats'] and len(curr_node.value.elts) == 1 and curr_node.value.elts[0] == node),
-            (Keyword, lambda curr_node, node: curr_node.arg in ['fields'] and node in curr_node.value.elts),
+            (Keyword,
+             lambda curr_node,
+             node: (curr_node.arg in [
+                    'regex', 'prefix', 'css_class', 'mimetype',
+                    'related_name', 'default', 'initial', 'upload_to']
+                    and curr_node.value == node)),
+            (Keyword,
+             lambda curr_node,
+             node: (curr_node.arg in ['input_formats']
+                    and len(curr_node.value.elts) == 1
+                    and curr_node.value.elts[0] == node)),
+            (Keyword,
+             lambda curr_node,
+             node: (curr_node.arg in ['fields']
+                    and node in curr_node.value.elts)),
             # something() == 'string'
             (Compare, lambda curr_node, node: node == curr_node.ops[0][1]),
             # 'something' == blah()
             (Compare, lambda curr_node, node: node == curr_node.left),
 
             # Try to exclude queryset.extra(something=[..., 'some sql',...]
-            (CallFunc, lambda curr_node, node: curr_node.func.attrname in ['extra'] and any(is_child_node(node, x) for x in curr_node.args)),
+            (CallFunc,
+             lambda curr_node,
+             node: (curr_node.func.attrname in ['extra']
+                    and any(is_child_node(node, x) for x in curr_node.args))),
 
             # Queryset functions, queryset.order_by('shouldignore')
-            (CallFunc, lambda curr_node, node: isinstance(curr_node.func, Getattr) and curr_node.func.attrname in [
-             'has_key', 'pop', 'order_by', 'strftime', 'strptime', 'get', 'select_related', 'values', 'filter', 'values_list']),
+            (CallFunc,
+             lambda curr_node,
+             node: (isinstance(curr_node.func, Getattr)
+                    and curr_node.func.attrname in [
+                    'has_key', 'pop', 'order_by', 'strftime', 'strptime',
+                    'get', 'select_related', 'values', 'filter',
+                    'values_list'])),
             # logging.info('shouldignore')
-            (CallFunc, lambda curr_node, node: curr_node.func.expr.name in ['logging']),
+            (CallFunc,
+             lambda curr_node,
+             node: curr_node.func.expr.name in ['logging']),
 
 
             # hasattr(..., 'should ignore')
             # HttpResponseRedirect('/some/url/shouldnt/care')
-            # first is function name, 2nd is the position the string must be in (none to mean don't care)
-            (CallFunc, lambda curr_node, node: curr_node.func.name in ['hasattr', 'getattr'] and curr_node.args[1] == node),
-            (CallFunc, lambda curr_node, node: curr_node.func.name in ['HttpResponseRedirect', 'HttpResponse']),
-            (CallFunc, lambda curr_node, node: curr_node.func.name == 'set_cookie' and curr_node.args[0] == node),
-            (CallFunc, lambda curr_node, node: curr_node.func.name in ['ForeignKey', 'OneToOneField'] and curr_node.args[0] == node),
+            # first is function name, 2nd is the position the string must be
+            # in (none to mean don't care)
+            (CallFunc,
+             lambda curr_node,
+             node: (curr_node.func.name in ['hasattr', 'getattr']
+                    and curr_node.args[1] == node)),
+            (CallFunc,
+             lambda curr_node,
+             node: (curr_node.func.name in [
+                    'HttpResponseRedirect', 'HttpResponse'])),
+            (CallFunc,
+             lambda curr_node,
+             node: (curr_node.func.name == 'set_cookie'
+                    and curr_node.args[0] == node)),
+            (CallFunc,
+             lambda curr_node,
+             node: (curr_node.func.name in ['ForeignKey', 'OneToOneField']
+                    and curr_node.args[0] == node)),
         ]
 
         string_ok = False
 
         debug = False
-        #debug = True
+        # debug = True
         curr_node = node
         if debug:
             import pdb
@@ -299,8 +360,10 @@ class MissingGettextChecker(BaseChecker):
                     print(repr(curr_node.as_string()))
                     print(curr_node.repr_tree())
                 if isinstance(curr_node, CallFunc):
-                    if hasattr(curr_node, 'func') and hasattr(curr_node.func, 'name'):
-                        if curr_node.func.name in ['_', 'ungettext', 'ungettext_lazy']:
+                    if (hasattr(curr_node, 'func')
+                            and hasattr(curr_node.func, 'name')):
+                        if (curr_node.func.name in [
+                                '_', 'ungettext', 'ungettext_lazy']):
                             # we're in a _() call
                             string_ok = True
                             break
