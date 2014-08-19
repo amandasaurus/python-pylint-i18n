@@ -11,6 +11,13 @@ except:
     # fallback to older pylint naming
     from pylint.interfaces import IASTNGChecker as IAstroidChecker
 
+try:
+   # ``urllib.parse`` is new (since Python 3.3), so may not be available to everyone.
+   import urllib.parse
+   _PARSE_URL = True
+except:
+   _PARSE_URL = False
+
 from pylint.checkers import BaseChecker
 
 import string
@@ -47,6 +54,68 @@ def _is_str(s):
     except NameError:  # unicode not defined in Python 3
         pass
     return False
+
+
+def _is_url(s):
+    """
+    Test if ``s`` seems to be an URL, using ``urllib.parse`` if available,
+    a fall‑back otherwise. The fall back test common protocol prefixes
+    and filname extensions.
+
+    :param str s:
+    :rtype: bool
+
+    Note: this just test URL, not general URI.
+
+    Examples which will return ``True``:
+
+     * ``"file://localhost"``
+     * ``"file://localhost/document.txt"``
+     * ``"file:///document.txt"``
+     * ``"file:///"``
+
+    Samples which will return ``False``:
+
+     * ``"document.txt"``
+     * ``"/document.txt"``
+     * ``"file://"``
+
+    """
+
+    if _PARSE_URL:
+      url = urllib.parse.urlparse(s)
+      has_scheme = url.scheme != ''
+      has_netloc = url.netloc != ''
+      has_path = url.path != ''
+      result = has_scheme and (has_netloc or has_path)
+    else:
+      # Fall‑back for when ``urllib`` is not available.
+
+      def strictly_starts_with(s, p):
+         """Test if ``p`` is a prefix of ``s`` and ``p != s``."""
+         return s.startswith(p) and (s != p)
+
+      def strictly_ends_with(s, p):
+         """Test if ``p`` is a suffix of ``s`` and ``p != s``."""
+         return s.startswith(p) and (s != p)
+
+      protocols = ['file', 'ftp', 'http', 'https', 'sftp', 'ssh']
+      extensions = ['asp', 'html', 'php', 'xhtml']
+
+      result = False
+
+      for protocol in protocols:
+         if strictly_starts_with(s, protocol + '://'):
+            result = True
+            break
+
+      if not result:
+         for extension in extension:
+            if strictly_ends_with(s, '.' + extension):
+               result = True
+               break
+
+    return result
 
 
 class MissingGettextChecker(BaseChecker):
@@ -87,8 +156,7 @@ class MissingGettextChecker(BaseChecker):
             is_number,
 
             # URL, can't be translated
-            lambda x: x.startswith("http://") or x.endswith(".html"),
-            lambda x: x.startswith("https://") or x.endswith(".html"),
+            _is_url,
 
             # probably a regular expression
             lambda x: x.startswith("^") and x.endswith("$"),
