@@ -1,3 +1,15 @@
+""" :class:`MissingGettextChecker`, extenting ``BaseChecker`` of PyLint. """
+
+# pylint: disable=E0611
+# pylint: disable=F0401
+# pylint: disable=W0401
+# pylint: disable=W0611
+# pylint: disable=W0614
+# pylint: disable=W0622
+
+# TODO: get ride of this.
+# pylint: disable=W9903
+
 try:
     from logilab import astng
     from logilab.astng.node_classes import *
@@ -7,7 +19,7 @@ except ImportError:
 
 try:
     from pylint.interfaces import IAstroidChecker
-except:
+except ImportError:
     # fallback to older pylint naming
     from pylint.interfaces import IASTNGChecker as IAstroidChecker
 
@@ -16,7 +28,7 @@ try:
     # everyone.
     import urllib.parse
     _PARSE_URL = True
-except:
+except ImportError:
     _PARSE_URL = False
 
 from pylint.checkers import BaseChecker
@@ -25,10 +37,10 @@ import string
 import os.path
 
 
-def is_number(string):
-    """Returns True if this string is a string representation of a number"""
+def is_number(text):
+    """Returns True if this text is a representation of a number"""
     try:
-        float(string)
+        float(text)
         return True
     except ValueError:
         return False
@@ -44,27 +56,27 @@ def is_child_node(child, parent):
     return False
 
 
-def _is_str(s):
+def _is_str(obj):
     """
     Is this a string or a unicode string?
     """
-    if isinstance(s, str):
+    if isinstance(obj, str):
         return True
     try:
-        if isinstance(s, unicode):
+        if isinstance(obj, unicode):  # pylint: disable=E0602
             return True
     except NameError:  # unicode not defined in Python 3
         pass
     return False
 
 
-def _is_url(s):
+def _is_url(text):
     """
-    Test if ``s`` seems to be an URL, using ``urllib.parse`` if available,
+    Test if ``text`` seems to be an URL, using ``urllib.parse`` if available,
     a fall‑back otherwise. The fall back test common protocol prefixes
     and filname extensions.
 
-    :param str s:
+    :param str text:
     :rtype: bool
 
     Note: this just test URL, not general URI.
@@ -85,7 +97,7 @@ def _is_url(s):
     """
 
     if _PARSE_URL:
-        url = urllib.parse.urlparse(s)
+        url = urllib.parse.urlparse(text)
         has_scheme = url.scheme != ''
         has_netloc = url.netloc != ''
         has_path = url.path != ''
@@ -93,13 +105,15 @@ def _is_url(s):
     else:
         # Fall‑back for when ``urllib`` is not available.
 
-        def strictly_starts_with(s, p):
-            """Test if ``p`` is a prefix of ``s`` and ``p != s``."""
-            return s.startswith(p) and (s != p)
+        def strictly_starts_with(text, prefix):
+            """Test if ``prefix`` is a prefix of ``text``, and there is
+            more after."""
+            return text.startswith(prefix) and (text != prefix)
 
-        def strictly_ends_with(s, p):
-            """Test if ``p`` is a suffix of ``s`` and ``p != s``."""
-            return s.startswith(p) and (s != p)
+        def strictly_ends_with(text, suffix):
+            """Test if ``suffix`` is a suffix of ``text``, and there
+            is more before."""
+            return text.startswith(suffix) and (text != suffix)
 
         protocols = ['file', 'ftp', 'http', 'https', 'sftp', 'ssh']
         extensions = ['asp', 'html', 'php', 'xhtml']
@@ -107,26 +121,26 @@ def _is_url(s):
         result = False
 
         for protocol in protocols:
-            if strictly_starts_with(s, protocol + '://'):
+            if strictly_starts_with(text, protocol + '://'):
                 result = True
                 break
 
         if not result:
             for extension in extensions:
-                if strictly_ends_with(s, '.' + extension):
+                if strictly_ends_with(text, '.' + extension):
                     result = True
                     break
 
     return result
 
 
-def _is_path(s):
+def _is_path(text):
     """
-    Test if ``s`` seems to be an URL, using ``urllib.parse`` if available,
+    Test if ``text`` seems to be an URL, using ``urllib.parse`` if available,
     a fall‑back otherwise. The fall back test common protocol prefixes
     and filname extensions.
 
-    :param str s:
+    :param str text:
     :rtype: bool
 
     This is not intended to be reliable for other mean than telling if
@@ -149,15 +163,15 @@ def _is_path(s):
 
     result = False
 
-    if os.path.expanduser(s) != s:
+    if os.path.expanduser(text) != text:
         # Expands ``$HOME`` on Windows, but not on UNIces. Still don't
         # use ``os.path.expandvars``, as this expands everything,
         # including what's not really related t paths.
         result = True
-    elif s.find('./') != -1:
+    elif text.find('./') != -1:
         # Testing ``./`` includes testing ``../``.
         result = True
-    elif s.find('/.') != -1:
+    elif text.find('/.') != -1:
         # Same comment as above.
         result = True
 
@@ -170,7 +184,7 @@ class MissingGettextChecker(BaseChecker):
     Checks for strings that aren't wrapped in a _ call somewhere
     """
 
-    __implements__ = IAstroidChecker
+    __implements__ = IAstroidChecker  # pylint: disable=F0220
 
     name = 'missing_gettext'
     msgs = {
@@ -378,15 +392,15 @@ class MissingGettextChecker(BaseChecker):
                             if func(curr_node, node):
                                 string_ok = True
                                 break
-                        except:
+                        except AttributeError:
                             pass
 
                 curr_node = curr_node.parent
 
-        except Exception as e:
+        except Exception as error:  # pylint: disable=W0703
             print(node, node.as_string())
             print(curr_node, curr_node.as_string())
-            print(e)
+            print(error)
             import pdb
             pdb.set_trace()
 
