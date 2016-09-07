@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """ :class:`MissingGettextChecker`, extenting ``BaseChecker`` of PyLint. """
 
 # pylint: disable=E0611
