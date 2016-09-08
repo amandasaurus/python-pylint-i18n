@@ -3,10 +3,10 @@
 from setuptools import setup
 
 setup(name="pylint-i18n",
-      version="1.0.0",
+      version="1.1-alpha",
       description="Find strings in your code that should be passed through gettext",
       author="Rory McCann",
-      author_email="rory@technomancy.org",
+      author_email="rory@technomancy.org, steve@somefantastic.co.uk",
       url="http://www.technomancy.org/python/pylint-i18n-lint-checker/",
       py_modules=["missing_gettext"],
       test_suite='tests',
