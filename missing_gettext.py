@@ -46,10 +46,8 @@ SELECTED_QUOTED_STRINGS_TO_IGNORE = getenv(
     'SELECTED_QUOTED_STRINGS_TO_IGNORE', []
 )
 
-SINGLE_QUOTED_STRING_REGEX = re.compile(
-    r'(?:\')\s*(\w+|\_)\s*(?:\')',
-    re.MULTILINE + re.UNICODE
-)
+SINGLE_QUOTED_STRING_REGEX = r"(?:\')\s*(\w+|\_)\s*(?:\')" 
+UNICODE_MULTILINE_REGEX_FLAG = re.MULTILINE + re.UNICODE
 
 from pylint.checkers import BaseChecker
 
@@ -255,12 +253,12 @@ class MissingGettextChecker(BaseChecker):
 
         if WHITELIST_SINGLE_QUOTED_STRINGS:
             whitelisted_strings.append(
-                lambda x: re.findall(SINGLE_QUOTED_STRING_REGEX, x),
+                lambda x: re.findall(SINGLE_QUOTED_STRING_REGEX, x, UNICODE_MULTILINE_REGEX_FLAG)
             )
         elif SELECTED_QUOTED_STRINGS_TO_IGNORE:
             # still allow excluding just some strings
             whitelisted_strings.append(
-                lambda x: x in SELECTED_QUOTED_STRINGS_TO_IGNORE,
+                lambda x: x in SELECTED_QUOTED_STRINGS_TO_IGNORE
             )
 
         for func in whitelisted_strings:
@@ -430,7 +428,7 @@ class MissingGettextChecker(BaseChecker):
 
         if not string_ok:
             # we've gotten to the top of the code tree / file level and we
-            # haven't been whitelisted, so add an error here
+            # haven't been whitelisted,fi so add an error here
             self.add_message('W9903', node=node, args=node.value)
 
 
