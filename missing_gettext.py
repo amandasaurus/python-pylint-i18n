@@ -9,8 +9,13 @@
 # pylint: disable=W0614
 # pylint: disable=W0622
 
-# TODO: get ride of this.
+# TODO: get ride of this - this is the module that we're currently creating
 # pylint: disable=W9903
+
+import re
+import string
+
+from os import getenv, path
 
 try:
     from logilab import astng
@@ -33,10 +38,20 @@ try:
 except ImportError:
     _PARSE_URL = False
 
-from pylint.checkers import BaseChecker
+WHITELIST_SINGLE_QUOTED_STRINGS = (
+    getenv('WHITELIST_SINGLE_QUOTED_STRINGS', "False") == "True"
+)
 
-import string
-import os.path
+SELECTED_QUOTED_STRINGS_TO_IGNORE = getenv(
+    'WHITELIST_SINGLE_QUOTED_STRINGS', []
+)
+
+SINGLE_QUOTED_STRING_REGEX = re.compile(
+    r'(?:\')\s*(\w+|\_)\s*(?:\')',
+    re.MULTILINE + re.UNICODE
+)
+
+from pylint.checkers import BaseChecker
 
 
 def is_number(text):
@@ -165,9 +180,9 @@ def _is_path(text):
 
     result = False
 
-    if os.path.expanduser(text) != text:
+    if path.expanduser(text) != text:
         # Expands ``$HOME`` on Windows, but not on UNIces. Still don't
-        # use ``os.path.expandvars``, as this expands everything,
+        # use ``path.expandvars``, as this expands everything,
         # including what's not really related t paths.
         result = True
     elif text.find('./') != -1:
@@ -208,9 +223,6 @@ class MissingGettextChecker(BaseChecker):
             # ignore empty strings
             lambda x: x == '',
 
-            # some strings we use
-            lambda x: x in ['POST', 'agency', 'promoter', 'venue', 'utf-8'],
-
             # This string is probably used as a key or something, and should
             # be ignored
             lambda x: len(x) > 3 and x.upper() == x,
@@ -240,6 +252,16 @@ class MissingGettextChecker(BaseChecker):
             # sending http header
             lambda x: x.startswith("text/html; charset="),
         ]
+
+        if WHITELIST_SINGLE_QUOTED_STRINGS:
+            whitelisted_strings.append(
+                lambda x: re.findall('SINGLE_QUOTED_STRING_REGEX', x),
+            )
+        elif SELECTED_QUOTED_STRINGS_TO_IGNORE:
+            # still allow excluding just some strings
+            whitelisted_strings.append(
+                lambda x: x in SELECTED_QUOTED_STRINGS_TO_IGNORE,
+            )
 
         for func in whitelisted_strings:
             if func(node.value):
