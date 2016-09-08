@@ -255,7 +255,7 @@ class MissingGettextChecker(BaseChecker):
 
         if WHITELIST_SINGLE_QUOTED_STRINGS:
             whitelisted_strings.append(
-                lambda x: re.findall('SINGLE_QUOTED_STRING_REGEX', x),
+                lambda x: re.findall(SINGLE_QUOTED_STRING_REGEX, x),
             )
         elif SELECTED_QUOTED_STRINGS_TO_IGNORE:
             # still allow excluding just some strings
