@@ -377,7 +377,7 @@ class MissingGettextChecker(BaseChecker):
                     if (hasattr(curr_node, 'func')
                             and hasattr(curr_node.func, 'name')):
                         if (curr_node.func.name in [
-                                '_', 'ungettext', 'ungettext_lazy']):
+                                '_', '_lazy', 'ungettext', 'ungettext_lazy']):
                             # we're in a _() call
                             string_ok = True
                             break
