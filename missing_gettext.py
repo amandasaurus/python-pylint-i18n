@@ -267,7 +267,7 @@ class MissingGettextChecker(BaseChecker):
              node: (len(curr_node.targets) == 1
                     and hasattr(curr_node.targets[0], 'name')
                     and curr_node.targets[0].name in [
-                        'template',
+                        'template_name',
                     ])),
             
             # list_display = [....]
