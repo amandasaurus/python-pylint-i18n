@@ -261,6 +261,15 @@ class MissingGettextChecker(BaseChecker):
             # dict['shouldignore']
             (Index, lambda curr_node, node: curr_node.value == node),
 
+            # View urls
+            (Assign,
+             lambda curr_node,
+             node: (len(curr_node.targets) == 1
+                    and hasattr(curr_node.targets[0], 'name')
+                    and curr_node.targets[0].name in [
+                        'template',
+                    ])),
+            
             # list_display = [....]
             # e.g. Django Admin class Meta:...
             (Assign,
