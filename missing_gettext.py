@@ -73,7 +73,7 @@ def _is_str(obj):
 def _is_url(text):
     """
     Test if ``text`` seems to be an URL, using ``urllib.parse`` if available,
-    a fall‑back otherwise. The fall back test common protocol prefixes
+    a fall-back otherwise. The fall back test common protocol prefixes
     and filname extensions.
 
     :param str text:
@@ -103,7 +103,7 @@ def _is_url(text):
         has_path = url.path != ''
         result = has_scheme and (has_netloc or has_path)
     else:
-        # Fall‑back for when ``urllib`` is not available.
+        # Fall-back for when ``urllib`` is not available.
 
         def strictly_starts_with(text, prefix):
             """Test if ``prefix`` is a prefix of ``text``, and there is
@@ -137,7 +137,7 @@ def _is_url(text):
 def _is_path(text):
     """
     Test if ``text`` seems to be an URL, using ``urllib.parse`` if available,
-    a fall‑back otherwise. The fall back test common protocol prefixes
+    a fall-back otherwise. The fall back test common protocol prefixes
     and filname extensions.
 
     :param str text:
@@ -261,6 +261,15 @@ class MissingGettextChecker(BaseChecker):
             # dict['shouldignore']
             (Index, lambda curr_node, node: curr_node.value == node),
 
+            # View urls
+            (Assign,
+             lambda curr_node,
+             node: (len(curr_node.targets) == 1
+                    and hasattr(curr_node.targets[0], 'name')
+                    and curr_node.targets[0].name in [
+                        'template_name',
+                    ])),
+            
             # list_display = [....]
             # e.g. Django Admin class Meta:...
             (Assign,
@@ -377,7 +386,7 @@ class MissingGettextChecker(BaseChecker):
                     if (hasattr(curr_node, 'func')
                             and hasattr(curr_node.func, 'name')):
                         if (curr_node.func.name in [
-                                '_', 'ungettext', 'ungettext_lazy']):
+                                '_', '_lazy', 'ungettext', 'ungettext_lazy']):
                             # we're in a _() call
                             string_ok = True
                             break
